@@ -1,0 +1,2 @@
+export(mrce)
+useDynLib(MRCE) 
