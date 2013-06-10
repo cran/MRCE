@@ -4,42 +4,32 @@
 \docType{package}
 \title{Multivariate regression with covariance estimation}
 \description{
-Computes the MRCE covariance estimators (Rothman, Levina, and Zhu, 2010) 
+Computes the MRCE estimators (Rothman, Levina, and Zhu, 2010) 
 and has the dataset \code{stock04} used in Rothman, Levina, and Zhu (2010),
-originally analyzed in Yuan et. al (2007)
+originally analyzed in Yuan et al. (2007).  
 }
-\details{The primary function is \code{mrce} (type \code{help(mrce)} for more information). The dataset is called \code{stock04}
-(type \code{help(stock04)} for additional information).}
+\details{The primary function is \code{\link{mrce}}. The dataset  is  \code{\link{stock04}}.}
 \author{Adam J. Rothman
 
 Maintainer: Adam J. Rothman <arothman@umn.edu>
 }
 \references{
-Rothman, A.J., Levina, E., and Zhu, J. (2010) Sparse multivariate regression with covariance estimation.
-  Journal of Computational and Graphical Statistics.  19: 974--962.
-}
- 
-\keyword{ package }
- 
-\examples{
-set.seed(5)
-n=50
-p=20
-q=20
+Rothman, A.J., Levina, E., and Zhu, J. (2010). Sparse multivariate regression with covariance estimation.
+  Journal of Computational and Graphical Statistics 19:974--962.
+  
+Yuan, M., Ekici, A., Lu, Z., and Monteiro, R. (2007). Dimension reduction and coefficient
+estimation in multivariate linear regression. Journal of the Royal Statistical Society Series
+B 69(3):329--346.
 
-true.B=matrix( rnorm(p*q), nrow=p, ncol=q)
-indi = matrix( rbinom(p*q, 1, 0.1), nrow=p, ncol=q)
-true.B = true.B*indi
-	
-X.tr=matrix(rnorm(n*p), nrow=n, ncol=p)
-E.tr=matrix(rnorm(n*q), nrow=n, ncol=q)
-Y.tr=X.tr\%*\%true.B+E.tr
+Cho-Jui Hsieh, Matyas A. Sustik, Inderjit S. Dhillon, and Pradeep Ravikumar (2011).
+Sparse inverse covariance matrix estimation using quadratic approximation. 
+Advances in Neural Information Processing Systems 24, 2011, p. 2330--2338.
 
-mx = apply(X.tr, 2, mean)
-my = apply(Y.tr, 2, mean)
-X.tr=scale(X.tr, center=mx, scale=FALSE)
-Y.tr=scale(Y.tr, center=my, scale=FALSE)
-	
-mrce.out=mrce(X=X.tr,Y=Y.tr, lam1=0.1, lam2=0.1, method="exact")
-mrce.out$Bhat
+
+Jerome Friedman, Trevor Hastie, Robert Tibshirani (2010). 
+Regularization Paths for Generalized Linear Models via Coordinate Descent. 
+Journal of Statistical Software, 33(1), 1-22.
 }
+
+\keyword{package}
+ 

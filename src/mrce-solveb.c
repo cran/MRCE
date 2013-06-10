@@ -1,121 +1,93 @@
 #include <math.h>
-#include <stdlib.h>
 
-
-double **make_mat(int nrow, int ncol);
-void delete_mat( double **mat);
-				  
-void blasso(double * Sin, double *Min, double *Omin, int * pin, 
-            int * qin, double * lamin, double * tol, int * maxit, double * Bout, int * warm)
+void blasso(double * B, double * S, double *M, double *Om, double * soft, int * pin, 
+            int * qin, int * nin, double * lam, double * tol, int * maxit, int * totalit, double * objective)
 {
+  double obj=*objective;
+  int n = *nin;
   int p=*pin;
   int q=*qin;
-	double lam=*lamin;
-  int i,j,k, kit,r,c;
-  double bdiff, bnew, H, J, AH, tmp;
-  double **S=make_mat(p,p);
-  double **M=make_mat(p,q);
-  double **Om=make_mat(q,q); 
-  double **B=make_mat(p,q);
+  int kit,r,c, a, b;
+  double  bnew, H, AH, tmp, tmp2, thisdiff, this_obj_diff, max_diff;
+  double *b_rc, *b_ab, *lam_rc, *soft_rc, * M_rc , *Om_cc, *Om_c0, *S_rr, *S_ar, *soft_ab, *Om_cb, *S_0r;
   
-  // Read in input 
-  for ( i=0; i < p; i++)
-  {
-    for(j=0; j < q; j++)
-    {
-      B[i][j]=0;
-      if( *warm == 1)
-      {
-        B[i][j]=Bout[j*p+i];
-      }
-      M[i][j]=Min[j*p+i];
-    }
-  }
-  for(i=0; i < p; i++)
-  {
-    for ( j=0; j < p; j++)
-    {
-      S[i][j]=Sin[j*p+i];
-    }
-  }
-  for(i=0; i < q; i++)
-  {
-    for ( j=0; j <q; j++)
-    {
-      Om[i][j]=Omin[j*q+i];
-    }
-  }
   kit=0;
-  bdiff=*tol+1;
-  while( (bdiff > *tol) && (kit < *maxit) )
+  max_diff=*tol+1.0;
+  while( (max_diff > *tol) && (kit < *maxit) )
   {
-    kit+=1;
-    bdiff = 0;
-    for(r=0; r < p; r++)
+    kit++;
+    max_diff = 0.0;
+    soft_rc=soft;
+    lam_rc=lam;
+    M_rc=M;
+    Om_cc=Om;
+    b_rc=B;
+    Om_c0=Om;
+    for(c=0; c <q; c++)
     {
-      for(c=0; c <q; c++)
-      {
-        //compute J
-        J=0;
-        for(j=0; j <p; j++)
+      S_rr=S;
+      S_0r=S;
+      for(r=0; r < p; r++)
+      {          
+        H = *soft_rc;
+        AH=fabs(H);
+        tmp=AH - *lam_rc;
+        bnew=0.0;
+        if(tmp  > 0.0 )
         {
-          for(k=0; k <q; k++)
-          {
-            if(B[j][k] != 0)
-            {
-              J+=B[j][k]*S[r][j]*Om[k][c];  
-            }
-          }
-        }
-        H = B[r][c] + (M[r][c]-J)/(S[r][r]*Om[c][c]);
-        AH = fabs(H);
-        tmp =AH - lam/(S[r][r]*Om[c][c]);
-        bnew=0;
-        if(tmp  > 0 )
-        {
-          if(H > 0)
-          {
+          if(H > 0.0)
             bnew = tmp;
-          }
-          if( H < 0 )
-          {
+          else if( H < 0.0 )
             bnew = -tmp;
+          else
+            bnew=0.0;
+        }            
+        bnew=bnew/(*S_rr * * Om_cc);
+        if(bnew != *b_rc)
+        {
+          thisdiff=*b_rc-bnew;
+          this_obj_diff=0.0;
+          soft_ab=soft;
+            
+          Om_cb=Om_c0;
+          b_ab=B;          
+          for(b=0; b<q;b++) //column  loop
+          {
+            S_ar=S_0r;
+            for(a=0; a<p; a++) //row loop
+            {
+              if(!( (a==r) && (b==c)))
+              {
+                tmp2=*S_ar * *Om_cb * thisdiff;
+                *soft_ab+= tmp2;
+                this_obj_diff+= *b_ab *tmp2;                
+              }
+              soft_ab++;
+              b_ab++;
+              S_ar++;
+            }
+            Om_cb++;         
           }
+          this_obj_diff+= thisdiff*(-*M_rc - *soft_rc + *S_rr * * Om_cc * (*b_rc + bnew) );
+          this_obj_diff+=  2.0* *lam_rc *(fabs(*b_rc) - fabs(bnew));
+          this_obj_diff=this_obj_diff/n;
+          *b_rc=bnew;
+          obj-=this_obj_diff;
+          if ( this_obj_diff > max_diff )
+            max_diff=this_obj_diff;
         }
-        bdiff+=fabs(B[r][c]-bnew);
-        B[r][c]=bnew;
-      }
-    }
+        M_rc++;
+        lam_rc++;
+        soft_rc++;
+        b_rc++;
+        S_0r+=p;
+        S_rr+=p+1;
+      } // end r loop
+      Om_c0+=q;
+      Om_cc+=q+1;
+    } // end c loop
   }
-  //prepare output into Bout	
-  for(j=0; j <q; j++)
-  {
-    for (i=0; i < p; i++)
-    {
-      Bout[j*p+i] = B[i][j];
-    }
-  }
-  delete_mat(S);
-  delete_mat(M);
-  delete_mat(Om);
-  delete_mat(B);
+  totalit[0]=kit;
+  objective[0]=obj;
 }
-
-
-double **make_mat(int nrow, int ncol)
-{
-  double ** mat;
-  int k;
-  mat = (double **) malloc(nrow*sizeof(double*));
-  mat[0]=(double*) malloc(nrow*ncol*sizeof(double));
-  for(k=1; k < nrow; k++)
-    mat[k] = mat[k-1] + ncol;
-  return mat;
-}
-void delete_mat( double **mat)
-{
-  free(mat[0]);
-  free(mat);  
-}
-
-
+ 
