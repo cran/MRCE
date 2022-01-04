@@ -1,3 +1,6 @@
+#include <Rdefines.h>
+#include <R_ext/Rdynload.h>
+#include <stdlib.h> 
 #include <math.h>
 
 void blasso(double * B, double * S, double *M, double *Om, double * soft, int * pin, 
@@ -91,3 +94,14 @@ void blasso(double * B, double * S, double *M, double *Om, double * soft, int * 
   objective[0]=obj;
 }
  
+static R_NativePrimitiveArgType blasso_t[13] 
+        = {REALSXP, REALSXP, REALSXP, REALSXP, REALSXP, INTSXP, 
+           INTSXP, INTSXP, REALSXP, REALSXP, INTSXP, INTSXP, REALSXP};
+
+static const R_CMethodDef cMethod[] = {{"blasso", (DL_FUNC) &blasso, 13, blasso_t}, {NULL, NULL, 0, NULL}};
+
+void R_init_MRCE(DllInfo *dll)
+{
+  R_registerRoutines(dll, cMethod, NULL, NULL, NULL);
+  R_useDynamicSymbols(dll, FALSE);
+}

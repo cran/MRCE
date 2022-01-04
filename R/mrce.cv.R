@@ -1,30 +1,36 @@
 mrce.cv=function(X, Y, lam.vec.1, lam.vec.2, kfold=5,
         tol.out, tol.in, maxit.out, maxit.in, silent,
-        cov.tol, cov.maxit, eps)
+        cov.tol, cov.maxit, eps, standardize, permute)
 {
   n=nrow(X)
   p=ncol(X)
   q=ncol(Y)
   err.mat = matrix(0, nrow=length(lam.vec.1), ncol=length(lam.vec.2))
-  ind=sample(n)
+  if(permute)
+    ind=sample(n)
+  else
+    ind=1:n
   for (k in 1:kfold)
   {
     if(!silent) cat("Staring fold : ", k, "\n")
     foldind = ind[ (1+floor((k-1)*n/kfold)):floor(k*n/kfold) ]
     X.tr=X[-foldind,]
     Y.tr=Y[-foldind,]
-	X.va=X[foldind,,drop=FALSE]
-	Y.va=Y[foldind,,drop=FALSE ]
- 
+	  X.va=X[foldind,,drop=FALSE]
+	  Y.va=Y[foldind,,drop=FALSE ]
     mtrx=apply(X.tr, 2, mean)
     X.tr=scale(X.tr, scale=FALSE, center=mtrx)
-    X.va=scale(X.va, scale=FALSE, center=mtrx)
     mtry=apply(Y.tr, 2, mean)
     Y.tr=scale(Y.tr, scale=FALSE, center=mtry)
-    Y.va=scale(Y.va, scale=FALSE, center=mtry)
-    
     n.tr=nrow(Y.tr)
+    if(standardize)
+    {
+      sx=sqrt(apply(X.tr^2, 2, sum)/n.tr)
+      X.tr=scale(X.tr, center=FALSE, scale=sx)
+    }else 
+      sx=rep(1,p)
     informed=NULL
+    informed$sx=sx
     informed$mx=mtrx
     informed$my=mtry
     informed$yty=crossprod(Y.tr)
@@ -34,18 +40,19 @@ mrce.cv=function(X, Y, lam.vec.1, lam.vec.2, kfold=5,
     informed$omega=diag(n.tr/diag(informed$yty))
     informed$sigma=diag(diag(informed$yty)/n.tr)
     
-	for(i in 1:length(lam.vec.1)) 
+    for(i in 1:length(lam.vec.1)) 
     {
       if(i > 1)
         informed=first
       for(j in 1:length(lam.vec.2))
       {
-      tmp.out=compute.mrce(X=X.tr,Y=Y.tr, lam1=lam.vec.1[i], lam2=lam.vec.2[j], 
+        tmp.out=compute.mrce(X=X.tr,Y=Y.tr, lam1=lam.vec.1[i], lam2=lam.vec.2[j], 
                            tol.out=tol.out, tol.in=tol.in, maxit.out=maxit.out, 
                            maxit.in=maxit.in, silent=silent,
                            cov.tol=cov.tol, cov.maxit=cov.maxit, 
-                           informed=informed, eps=eps)
-        err.mat[i,j]=err.mat[i,j]+mean((Y.va-X.va%*%tmp.out$Bhat)^2)
+                           informed=informed, eps=eps, standardize=standardize)
+        Yhat.va=rep(1,nrow(X.va))%*%t(tmp.out$muhat) + X.va %*% tmp.out$Bhat
+        err.mat[i,j]=err.mat[i,j]+sum((Y.va-Yhat.va)^2)
         informed$Bhat=tmp.out$Bhat
         informed$omega=tmp.out$omega
         informed$sigma=tmp.out$sigma  
@@ -66,8 +73,7 @@ mrce.cv=function(X, Y, lam.vec.1, lam.vec.2, kfold=5,
                            tol.out=tol.out, tol.in=tol.in, maxit.out=maxit.out, 
                            maxit.in=maxit.in, silent=silent,
                            cov.tol=cov.tol, cov.maxit=cov.maxit, 
-                           informed=NULL, eps=eps)
+                           informed=NULL, eps=eps, standardize=standardize)
   return(list(Bhat=out$Bhat, muhat=out$muhat, omega=out$omega, mx=out$mx, my=out$my, 
-         best.lam1=best.lam1, best.lam2=best.lam2, cv.err=err.mat))
+         best.lam1=best.lam1, best.lam2=best.lam2, cv.err=err.mat/n, sx=out$sx))
 }
-

@@ -21,10 +21,9 @@ Yuan, M., Ekici, A., Lu, Z., and Monteiro, R. (2007). Dimension reduction and co
 estimation in multivariate linear regression. Journal of the Royal Statistical Society Series
 B 69(3):329--346.
 
-Cho-Jui Hsieh, Matyas A. Sustik, Inderjit S. Dhillon, and Pradeep Ravikumar (2011).
-Sparse inverse covariance matrix estimation using quadratic approximation. 
-Advances in Neural Information Processing Systems 24, 2011, p. 2330--2338.
-
+Jerome Friedman, Trevor Hastie, Robert Tibshirani (2008). 
+Sparse inverse covariance estimation with the graphical lasso. 
+Biostatistics, 9(3), 432-441.
 
 Jerome Friedman, Trevor Hastie, Robert Tibshirani (2010). 
 Regularization Paths for Generalized Linear Models via Coordinate Descent. 
